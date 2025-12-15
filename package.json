@@ -5,6 +5,7 @@
   "main": "index.js",
   "scripts": {
     "dev": "npx serve frontend -p 3000",
+    "deploy": "wrangler pages deploy frontend --project-name web3-playground-sepolia",
     "send": "node src/sendToZeroAddress.js",
     "crypto": "node src/hexCrypto.js",
     "read": "node src/readChainData.js",
