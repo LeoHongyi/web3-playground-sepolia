@@ -1,0 +1,25 @@
+{
+  "name": "web3-playground-sepolia",
+  "version": "1.0.0",
+  "description": "Web3 学习项目 - Sepolia 测试网",
+  "main": "index.js",
+  "scripts": {
+    "dev": "npx serve frontend -p 3000",
+    "send": "node src/sendToZeroAddress.js",
+    "crypto": "node src/hexCrypto.js",
+    "read": "node src/readChainData.js",
+    "graph": "node src/theGraphDemo.js",
+    "all": "node src/hexCrypto.js && node src/readChainData.js && node src/theGraphDemo.js"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "dependencies": {
+    "@apollo/client": "^4.0.10",
+    "cross-fetch": "^4.1.0",
+    "dotenv": "^17.2.3",
+    "ethers": "^6.16.0",
+    "graphql": "^16.12.0"
+  }
+}

@@ -1,0 +1,970 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Web3 Playground - Sepolia</title>
+    <script src="https://cdn.jsdelivr.net/npm/ethers@6.9.0/dist/ethers.umd.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+            min-height: 100vh;
+            color: #fff;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        header {
+            text-align: center;
+            padding: 40px 0;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+            margin-bottom: 30px;
+        }
+
+        header h1 {
+            font-size: 2.5rem;
+            background: linear-gradient(90deg, #00d9ff, #a855f7);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 10px;
+        }
+
+        header p {
+            color: #94a3b8;
+            font-size: 1.1rem;
+        }
+
+        .wallet-section {
+            background: rgba(255,255,255,0.05);
+            border-radius: 16px;
+            padding: 20px;
+            margin-bottom: 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+
+        .wallet-info {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .wallet-status {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: #ef4444;
+        }
+
+        .wallet-status.connected {
+            background: #22c55e;
+            box-shadow: 0 0 10px #22c55e;
+        }
+
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-weight: 600;
+        }
+
+        .btn-primary {
+            background: linear-gradient(90deg, #3b82f6, #8b5cf6);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(59, 130, 246, 0.3);
+        }
+
+        .btn-danger {
+            background: linear-gradient(90deg, #ef4444, #f97316);
+            color: white;
+        }
+
+        .btn-success {
+            background: linear-gradient(90deg, #22c55e, #14b8a6);
+            color: white;
+        }
+
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+
+        .tab {
+            padding: 12px 20px;
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 8px;
+            color: #94a3b8;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .tab:hover {
+            background: rgba(255,255,255,0.1);
+        }
+
+        .tab.active {
+            background: linear-gradient(90deg, #3b82f6, #8b5cf6);
+            color: white;
+            border-color: transparent;
+        }
+
+        .panel {
+            display: none;
+            background: rgba(255,255,255,0.05);
+            border-radius: 16px;
+            padding: 30px;
+            animation: fadeIn 0.3s ease;
+        }
+
+        .panel.active {
+            display: block;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .panel h2 {
+            font-size: 1.5rem;
+            margin-bottom: 20px;
+            color: #e2e8f0;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            color: #94a3b8;
+            font-size: 0.9rem;
+        }
+
+        .form-group input, .form-group textarea {
+            width: 100%;
+            padding: 12px 16px;
+            background: rgba(0,0,0,0.3);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 8px;
+            color: #fff;
+            font-size: 1rem;
+            transition: border-color 0.3s ease;
+        }
+
+        .form-group input:focus, .form-group textarea:focus {
+            outline: none;
+            border-color: #3b82f6;
+        }
+
+        .form-group textarea {
+            min-height: 100px;
+            font-family: 'Monaco', 'Menlo', monospace;
+            resize: vertical;
+        }
+
+        .result-box {
+            background: rgba(0,0,0,0.3);
+            border-radius: 8px;
+            padding: 20px;
+            margin-top: 20px;
+            font-family: 'Monaco', 'Menlo', monospace;
+            font-size: 0.9rem;
+            overflow-x: auto;
+            white-space: pre-wrap;
+            word-break: break-all;
+        }
+
+        .result-box.success {
+            border-left: 4px solid #22c55e;
+        }
+
+        .result-box.error {
+            border-left: 4px solid #ef4444;
+        }
+
+        .result-box.info {
+            border-left: 4px solid #3b82f6;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-top: 20px;
+        }
+
+        .card {
+            background: rgba(255,255,255,0.05);
+            border-radius: 12px;
+            padding: 20px;
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+
+        .card h3 {
+            color: #94a3b8;
+            font-size: 0.85rem;
+            text-transform: uppercase;
+            margin-bottom: 8px;
+        }
+
+        .card .value {
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: #e2e8f0;
+        }
+
+        .card .value.small {
+            font-size: 0.9rem;
+            word-break: break-all;
+        }
+
+        .faucet-list {
+            display: grid;
+            gap: 10px;
+            margin-top: 15px;
+        }
+
+        .faucet-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px;
+            background: rgba(0,0,0,0.2);
+            border-radius: 8px;
+        }
+
+        .faucet-item a {
+            color: #3b82f6;
+            text-decoration: none;
+        }
+
+        .faucet-item a:hover {
+            text-decoration: underline;
+        }
+
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 2px solid rgba(255,255,255,0.3);
+            border-radius: 50%;
+            border-top-color: #fff;
+            animation: spin 1s linear infinite;
+            margin-right: 10px;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .tx-link {
+            color: #3b82f6;
+            text-decoration: none;
+        }
+
+        .tx-link:hover {
+            text-decoration: underline;
+        }
+
+        .swap-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+        }
+
+        .swap-table th, .swap-table td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+        }
+
+        .swap-table th {
+            color: #94a3b8;
+            font-weight: 500;
+        }
+
+        .network-badge {
+            display: inline-block;
+            padding: 4px 12px;
+            background: #f59e0b;
+            color: #000;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 600;
+        }
+
+        footer {
+            text-align: center;
+            padding: 40px 0;
+            color: #64748b;
+            border-top: 1px solid rgba(255,255,255,0.1);
+            margin-top: 40px;
+        }
+
+        @media (max-width: 768px) {
+            header h1 {
+                font-size: 1.8rem;
+            }
+
+            .wallet-section {
+                flex-direction: column;
+                text-align: center;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Web3 Playground</h1>
+            <p>Sepolia 测试网学习项目 <span class="network-badge">Sepolia Testnet</span></p>
+        </header>
+
+        <div class="wallet-section">
+            <div class="wallet-info">
+                <div class="wallet-status" id="walletStatus"></div>
+                <div>
+                    <div id="walletAddress" style="font-weight: 600;">未连接钱包</div>
+                    <div id="walletBalance" style="color: #94a3b8; font-size: 0.9rem;"></div>
+                </div>
+            </div>
+            <button class="btn btn-primary" id="connectBtn" onclick="connectWallet()">连接 MetaMask</button>
+        </div>
+
+        <div class="tabs">
+            <div class="tab active" onclick="switchTab('faucet')">水龙头</div>
+            <div class="tab" onclick="switchTab('transfer')">转账到 Zero Address</div>
+            <div class="tab" onclick="switchTab('crypto')">加密解密</div>
+            <div class="tab" onclick="switchTab('chain')">链上数据</div>
+            <div class="tab" onclick="switchTab('graph')">The Graph</div>
+        </div>
+
+        <!-- 水龙头 Panel -->
+        <div class="panel active" id="panel-faucet">
+            <h2>Sepolia 水龙头</h2>
+            <p style="color: #94a3b8; margin-bottom: 20px;">获取免费的 Sepolia 测试 ETH</p>
+
+            <div class="faucet-list">
+                <div class="faucet-item">
+                    <div>
+                        <strong>Google Cloud Faucet</strong>
+                        <p style="color: #94a3b8; font-size: 0.85rem;">Google 账号即可，简单快速</p>
+                    </div>
+                    <a href="https://cloud.google.com/application/web3/faucet/ethereum/sepolia" target="_blank">前往领取 →</a>
+                </div>
+                <div class="faucet-item">
+                    <div>
+                        <strong>Alchemy Faucet</strong>
+                        <p style="color: #94a3b8; font-size: 0.85rem;">需要 Alchemy 账号，每24小时 0.5 ETH</p>
+                    </div>
+                    <a href="https://sepoliafaucet.com/" target="_blank">前往领取 →</a>
+                </div>
+                <div class="faucet-item">
+                    <div>
+                        <strong>Infura Faucet</strong>
+                        <p style="color: #94a3b8; font-size: 0.85rem;">需要 Infura 账号</p>
+                    </div>
+                    <a href="https://www.infura.io/faucet/sepolia" target="_blank">前往领取 →</a>
+                </div>
+                <div class="faucet-item">
+                    <div>
+                        <strong>QuickNode Faucet</strong>
+                        <p style="color: #94a3b8; font-size: 0.85rem;">需要 QuickNode 账号</p>
+                    </div>
+                    <a href="https://faucet.quicknode.com/ethereum/sepolia" target="_blank">前往领取 →</a>
+                </div>
+            </div>
+        </div>
+
+        <!-- 转账 Panel -->
+        <div class="panel" id="panel-transfer">
+            <h2>转账到 Zero Address</h2>
+            <p style="color: #94a3b8; margin-bottom: 20px;">发送 ETH 到 0x0000...0000 (将永久销毁)</p>
+
+            <div class="form-group">
+                <label>发送金额 (ETH)</label>
+                <input type="number" id="transferAmount" value="0.0001" step="0.0001" min="0">
+            </div>
+
+            <div class="form-group">
+                <label>附加数据 (可选，十六进制)</label>
+                <input type="text" id="transferData" placeholder="0x" value="0x">
+            </div>
+
+            <button class="btn btn-danger" id="transferBtn" onclick="sendToZeroAddress()" disabled>
+                发送到 Zero Address
+            </button>
+
+            <div id="transferResult"></div>
+        </div>
+
+        <!-- 加密解密 Panel -->
+        <div class="panel" id="panel-crypto">
+            <h2>16 进制数据加密解密</h2>
+            <p style="color: #94a3b8; margin-bottom: 20px;">自定义的 XOR + 位移 + 随机盐加密方案</p>
+
+            <div class="form-group">
+                <label>加密密钥</label>
+                <input type="text" id="cryptoKey" value="my_secret_key_123">
+            </div>
+
+            <div class="form-group">
+                <label>明文消息</label>
+                <textarea id="plainText" placeholder="输入要加密的消息...">Hello, Ethereum!</textarea>
+            </div>
+
+            <div style="display: flex; gap: 10px; margin-bottom: 20px;">
+                <button class="btn btn-primary" onclick="encryptMessage()">加密</button>
+                <button class="btn btn-success" onclick="decryptMessage()">解密</button>
+            </div>
+
+            <div class="form-group">
+                <label>加密后的十六进制</label>
+                <textarea id="encryptedHex" placeholder="加密结果将显示在这里..."></textarea>
+            </div>
+
+            <div id="cryptoResult"></div>
+        </div>
+
+        <!-- 链上数据 Panel -->
+        <div class="panel" id="panel-chain">
+            <h2>链上数据读取</h2>
+            <p style="color: #94a3b8; margin-bottom: 20px;">使用 Ethers.js 读取 Sepolia 测试网数据</p>
+
+            <button class="btn btn-primary" onclick="readChainData()" id="readChainBtn">读取链上数据</button>
+
+            <div id="chainDataResult">
+                <div class="grid" id="chainDataGrid" style="display: none;">
+                    <div class="card">
+                        <h3>网络</h3>
+                        <div class="value" id="networkName">-</div>
+                    </div>
+                    <div class="card">
+                        <h3>Chain ID</h3>
+                        <div class="value" id="chainId">-</div>
+                    </div>
+                    <div class="card">
+                        <h3>区块高度</h3>
+                        <div class="value" id="blockNumber">-</div>
+                    </div>
+                    <div class="card">
+                        <h3>Gas Price</h3>
+                        <div class="value" id="gasPrice">-</div>
+                    </div>
+                </div>
+
+                <div id="blockInfo" style="margin-top: 20px;"></div>
+            </div>
+        </div>
+
+        <!-- The Graph Panel -->
+        <div class="panel" id="panel-graph">
+            <h2>The Graph 数据查询</h2>
+            <p style="color: #94a3b8; margin-bottom: 20px;">查询 Uniswap V3 链上数据 (以太坊主网)</p>
+
+            <div class="form-group">
+                <label>API Key (从 <a href="https://thegraph.com/studio/" target="_blank" style="color: #3b82f6;">The Graph Studio</a> 获取)</label>
+                <input type="text" id="graphApiKey" placeholder="输入你的 API Key">
+            </div>
+
+            <button class="btn btn-primary" onclick="queryTheGraph()" id="queryGraphBtn">查询 Uniswap V3 数据</button>
+
+            <div id="graphResult"></div>
+        </div>
+
+        <footer>
+            <p>Web3 Playground - Sepolia Testnet Learning Project</p>
+            <p style="margin-top: 10px;">
+                <a href="https://sepolia.etherscan.io/" target="_blank" style="color: #3b82f6;">Sepolia Etherscan</a>
+            </p>
+        </footer>
+    </div>
+
+    <script>
+        // ============ 全局变量 ============
+        let provider = null;
+        let signer = null;
+        let userAddress = null;
+
+        const ZERO_ADDRESS = '0x0000000000000000000000000000000000000000';
+        const SEPOLIA_CHAIN_ID = 11155111;
+
+        // ============ Tab 切换 ============
+        function switchTab(tabName) {
+            document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
+            document.querySelectorAll('.panel').forEach(panel => panel.classList.remove('active'));
+
+            event.target.classList.add('active');
+            document.getElementById(`panel-${tabName}`).classList.add('active');
+        }
+
+        // ============ 钱包连接 ============
+        async function connectWallet() {
+            if (typeof window.ethereum === 'undefined') {
+                alert('请安装 MetaMask 钱包!');
+                return;
+            }
+
+            try {
+                const connectBtn = document.getElementById('connectBtn');
+                connectBtn.innerHTML = '<span class="loading"></span>连接中...';
+                connectBtn.disabled = true;
+
+                // 请求连接
+                await window.ethereum.request({ method: 'eth_requestAccounts' });
+
+                // 检查网络
+                const chainId = await window.ethereum.request({ method: 'eth_chainId' });
+                if (parseInt(chainId, 16) !== SEPOLIA_CHAIN_ID) {
+                    try {
+                        await window.ethereum.request({
+                            method: 'wallet_switchEthereumChain',
+                            params: [{ chainId: '0xaa36a7' }],
+                        });
+                    } catch (switchError) {
+                        if (switchError.code === 4902) {
+                            await window.ethereum.request({
+                                method: 'wallet_addEthereumChain',
+                                params: [{
+                                    chainId: '0xaa36a7',
+                                    chainName: 'Sepolia',
+                                    nativeCurrency: { name: 'ETH', symbol: 'ETH', decimals: 18 },
+                                    rpcUrls: ['https://rpc.sepolia.org'],
+                                    blockExplorerUrls: ['https://sepolia.etherscan.io']
+                                }],
+                            });
+                        }
+                    }
+                }
+
+                // 创建 provider 和 signer
+                provider = new ethers.BrowserProvider(window.ethereum);
+                signer = await provider.getSigner();
+                userAddress = await signer.getAddress();
+
+                // 更新 UI
+                updateWalletUI();
+
+                // 监听账户变化
+                window.ethereum.on('accountsChanged', handleAccountsChanged);
+                window.ethereum.on('chainChanged', () => window.location.reload());
+
+            } catch (error) {
+                console.error(error);
+                alert('连接失败: ' + error.message);
+            } finally {
+                const connectBtn = document.getElementById('connectBtn');
+                connectBtn.innerHTML = userAddress ? '已连接' : '连接 MetaMask';
+                connectBtn.disabled = !!userAddress;
+            }
+        }
+
+        async function updateWalletUI() {
+            const statusEl = document.getElementById('walletStatus');
+            const addressEl = document.getElementById('walletAddress');
+            const balanceEl = document.getElementById('walletBalance');
+            const transferBtn = document.getElementById('transferBtn');
+
+            if (userAddress) {
+                statusEl.classList.add('connected');
+                addressEl.textContent = `${userAddress.slice(0, 6)}...${userAddress.slice(-4)}`;
+
+                const balance = await provider.getBalance(userAddress);
+                balanceEl.textContent = `${parseFloat(ethers.formatEther(balance)).toFixed(4)} ETH`;
+
+                transferBtn.disabled = false;
+            }
+        }
+
+        function handleAccountsChanged(accounts) {
+            if (accounts.length === 0) {
+                userAddress = null;
+                document.getElementById('walletStatus').classList.remove('connected');
+                document.getElementById('walletAddress').textContent = '未连接钱包';
+                document.getElementById('walletBalance').textContent = '';
+                document.getElementById('transferBtn').disabled = true;
+                document.getElementById('connectBtn').disabled = false;
+                document.getElementById('connectBtn').innerHTML = '连接 MetaMask';
+            } else {
+                userAddress = accounts[0];
+                updateWalletUI();
+            }
+        }
+
+        // ============ 转账到 Zero Address ============
+        async function sendToZeroAddress() {
+            if (!signer) {
+                alert('请先连接钱包!');
+                return;
+            }
+
+            const amount = document.getElementById('transferAmount').value;
+            const data = document.getElementById('transferData').value || '0x';
+            const resultEl = document.getElementById('transferResult');
+            const btn = document.getElementById('transferBtn');
+
+            try {
+                btn.innerHTML = '<span class="loading"></span>发送中...';
+                btn.disabled = true;
+
+                resultEl.innerHTML = '<div class="result-box info">正在发送交易...</div>';
+
+                const tx = await signer.sendTransaction({
+                    to: ZERO_ADDRESS,
+                    value: ethers.parseEther(amount),
+                    data: data
+                });
+
+                resultEl.innerHTML = `
+                    <div class="result-box info">
+交易已发送!
+交易哈希: ${tx.hash}
+<a href="https://sepolia.etherscan.io/tx/${tx.hash}" target="_blank" class="tx-link">在 Etherscan 查看 →</a>
+
+等待确认中...
+                    </div>
+                `;
+
+                const receipt = await tx.wait();
+
+                resultEl.innerHTML = `
+                    <div class="result-box success">
+交易已确认!
+交易哈希: ${tx.hash}
+区块号: ${receipt.blockNumber}
+Gas 消耗: ${receipt.gasUsed.toString()}
+状态: ${receipt.status === 1 ? '成功' : '失败'}
+
+<a href="https://sepolia.etherscan.io/tx/${tx.hash}" target="_blank" class="tx-link">在 Etherscan 查看 →</a>
+                    </div>
+                `;
+
+                // 更新余额
+                updateWalletUI();
+
+            } catch (error) {
+                resultEl.innerHTML = `<div class="result-box error">错误: ${error.message}</div>`;
+            } finally {
+                btn.innerHTML = '发送到 Zero Address';
+                btn.disabled = false;
+            }
+        }
+
+        // ============ 加密解密 ============
+        class HexCrypto {
+            constructor(secretKey) {
+                this.key = this.sha256(secretKey);
+            }
+
+            async sha256(message) {
+                const msgBuffer = new TextEncoder().encode(message);
+                const hashBuffer = await crypto.subtle.digest('SHA-256', msgBuffer);
+                return new Uint8Array(hashBuffer);
+            }
+
+            async encrypt(plaintext) {
+                const key = await this.key;
+                const salt = crypto.getRandomValues(new Uint8Array(8));
+                const plaintextBytes = new TextEncoder().encode(plaintext);
+                const encrypted = new Uint8Array(plaintextBytes.length);
+
+                for (let i = 0; i < plaintextBytes.length; i++) {
+                    let byte = plaintextBytes[i] ^ key[i % key.length];
+                    byte = byte ^ salt[i % salt.length];
+                    const shift = (i % 7) + 1;
+                    byte = ((byte << shift) | (byte >> (8 - shift))) & 0xff;
+                    encrypted[i] = byte;
+                }
+
+                const result = new Uint8Array(salt.length + encrypted.length);
+                result.set(salt);
+                result.set(encrypted, salt.length);
+
+                return '0x' + Array.from(result).map(b => b.toString(16).padStart(2, '0')).join('');
+            }
+
+            async decrypt(hexString) {
+                const key = await this.key;
+                const hex = hexString.startsWith('0x') ? hexString.slice(2) : hexString;
+                const data = new Uint8Array(hex.match(/.{1,2}/g).map(byte => parseInt(byte, 16)));
+
+                const salt = data.slice(0, 8);
+                const encrypted = data.slice(8);
+                const decrypted = new Uint8Array(encrypted.length);
+
+                for (let i = 0; i < encrypted.length; i++) {
+                    let byte = encrypted[i];
+                    const shift = (i % 7) + 1;
+                    byte = ((byte >> shift) | (byte << (8 - shift))) & 0xff;
+                    byte = byte ^ salt[i % salt.length];
+                    byte = byte ^ key[i % key.length];
+                    decrypted[i] = byte;
+                }
+
+                return new TextDecoder().decode(decrypted);
+            }
+        }
+
+        let cryptor = null;
+
+        async function initCryptor() {
+            const key = document.getElementById('cryptoKey').value;
+            cryptor = new HexCrypto(key);
+        }
+
+        async function encryptMessage() {
+            await initCryptor();
+            const plaintext = document.getElementById('plainText').value;
+            const resultEl = document.getElementById('cryptoResult');
+
+            try {
+                const encrypted = await cryptor.encrypt(plaintext);
+                document.getElementById('encryptedHex').value = encrypted;
+                resultEl.innerHTML = `<div class="result-box success">加密成功! 每次加密结果不同 (随机盐)</div>`;
+            } catch (error) {
+                resultEl.innerHTML = `<div class="result-box error">加密失败: ${error.message}</div>`;
+            }
+        }
+
+        async function decryptMessage() {
+            await initCryptor();
+            const encrypted = document.getElementById('encryptedHex').value;
+            const resultEl = document.getElementById('cryptoResult');
+
+            try {
+                const decrypted = await cryptor.decrypt(encrypted);
+                document.getElementById('plainText').value = decrypted;
+                resultEl.innerHTML = `<div class="result-box success">解密成功!</div>`;
+            } catch (error) {
+                resultEl.innerHTML = `<div class="result-box error">解密失败: ${error.message}</div>`;
+            }
+        }
+
+        // ============ 链上数据读取 ============
+        async function readChainData() {
+            const btn = document.getElementById('readChainBtn');
+            const grid = document.getElementById('chainDataGrid');
+            const blockInfo = document.getElementById('blockInfo');
+
+            try {
+                btn.innerHTML = '<span class="loading"></span>读取中...';
+                btn.disabled = true;
+
+                // 使用公共 RPC
+                const rpcProvider = new ethers.JsonRpcProvider('https://ethereum-sepolia-rpc.publicnode.com');
+
+                // 获取网络信息
+                const network = await rpcProvider.getNetwork();
+                const blockNumber = await rpcProvider.getBlockNumber();
+                const feeData = await rpcProvider.getFeeData();
+                const block = await rpcProvider.getBlock('latest');
+
+                // 更新 UI
+                grid.style.display = 'grid';
+                document.getElementById('networkName').textContent = 'Sepolia';
+                document.getElementById('chainId').textContent = network.chainId.toString();
+                document.getElementById('blockNumber').textContent = blockNumber.toLocaleString();
+                document.getElementById('gasPrice').textContent = `${parseFloat(ethers.formatUnits(feeData.gasPrice, 'gwei')).toFixed(6)} Gwei`;
+
+                // 区块信息
+                blockInfo.innerHTML = `
+                    <h3 style="margin-bottom: 15px; color: #e2e8f0;">最新区块信息</h3>
+                    <div class="result-box info">
+区块号: ${block.number}
+区块哈希: ${block.hash}
+时间: ${new Date(block.timestamp * 1000).toLocaleString()}
+交易数量: ${block.transactions.length}
+Gas Used: ${block.gasUsed.toLocaleString()}
+Gas Limit: ${block.gasLimit.toLocaleString()}
+矿工/验证者: ${block.miner}
+                    </div>
+                `;
+
+            } catch (error) {
+                blockInfo.innerHTML = `<div class="result-box error">读取失败: ${error.message}</div>`;
+            } finally {
+                btn.innerHTML = '读取链上数据';
+                btn.disabled = false;
+            }
+        }
+
+        // ============ The Graph 查询 ============
+        async function queryTheGraph() {
+            const apiKey = document.getElementById('graphApiKey').value;
+            const resultEl = document.getElementById('graphResult');
+            const btn = document.getElementById('queryGraphBtn');
+
+            if (!apiKey) {
+                resultEl.innerHTML = `<div class="result-box error">请输入 API Key</div>`;
+                return;
+            }
+
+            try {
+                btn.innerHTML = '<span class="loading"></span>查询中...';
+                btn.disabled = true;
+
+                const endpoint = `https://gateway.thegraph.com/api/${apiKey}/subgraphs/id/5zvR82QoaXYFyDEKLZ9t6v9adgnptxYpKpSbxtgVENFV`;
+
+                // 查询工厂信息
+                const factoryQuery = `
+                    query {
+                        factories(first: 1) {
+                            poolCount
+                            txCount
+                            totalVolumeUSD
+                            totalValueLockedUSD
+                        }
+                    }
+                `;
+
+                // 查询热门交易池
+                const poolsQuery = `
+                    query {
+                        pools(first: 5, orderBy: totalValueLockedUSD, orderDirection: desc) {
+                            token0 { symbol }
+                            token1 { symbol }
+                            feeTier
+                            totalValueLockedUSD
+                            volumeUSD
+                        }
+                    }
+                `;
+
+                const [factoryRes, poolsRes] = await Promise.all([
+                    fetch(endpoint, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ query: factoryQuery })
+                    }),
+                    fetch(endpoint, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ query: poolsQuery })
+                    })
+                ]);
+
+                const factoryData = await factoryRes.json();
+                const poolsData = await poolsRes.json();
+
+                if (factoryData.errors || poolsData.errors) {
+                    throw new Error(JSON.stringify(factoryData.errors || poolsData.errors));
+                }
+
+                const factory = factoryData.data.factories[0];
+                const pools = poolsData.data.pools;
+
+                // 格式化数字
+                const formatUSD = (num) => '$' + parseFloat(num).toLocaleString(undefined, { maximumFractionDigits: 0 });
+
+                let poolsHtml = pools.map((p, i) => `
+                    <tr>
+                        <td>${i + 1}</td>
+                        <td>${p.token0.symbol}/${p.token1.symbol}</td>
+                        <td>${p.feeTier / 10000}%</td>
+                        <td>${formatUSD(p.totalValueLockedUSD)}</td>
+                        <td>${formatUSD(p.volumeUSD)}</td>
+                    </tr>
+                `).join('');
+
+                resultEl.innerHTML = `
+                    <div class="grid" style="margin-top: 20px;">
+                        <div class="card">
+                            <h3>交易池数量</h3>
+                            <div class="value">${parseInt(factory.poolCount).toLocaleString()}</div>
+                        </div>
+                        <div class="card">
+                            <h3>总交易次数</h3>
+                            <div class="value">${parseInt(factory.txCount).toLocaleString()}</div>
+                        </div>
+                        <div class="card">
+                            <h3>总交易量</h3>
+                            <div class="value small">${formatUSD(factory.totalVolumeUSD)}</div>
+                        </div>
+                        <div class="card">
+                            <h3>总锁仓价值</h3>
+                            <div class="value small">${formatUSD(factory.totalValueLockedUSD)}</div>
+                        </div>
+                    </div>
+
+                    <h3 style="margin: 30px 0 15px; color: #e2e8f0;">TVL 排名前 5 的交易池</h3>
+                    <table class="swap-table">
+                        <thead>
+                            <tr>
+                                <th>#</th>
+                                <th>交易对</th>
+                                <th>手续费</th>
+                                <th>TVL</th>
+                                <th>交易量</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${poolsHtml}
+                        </tbody>
+                    </table>
+                `;
+
+            } catch (error) {
+                resultEl.innerHTML = `<div class="result-box error">查询失败: ${error.message}</div>`;
+            } finally {
+                btn.innerHTML = '查询 Uniswap V3 数据';
+                btn.disabled = false;
+            }
+        }
+
+        // ============ 初始化 ============
+        window.onload = function() {
+            // 检查是否已连接
+            if (typeof window.ethereum !== 'undefined') {
+                window.ethereum.request({ method: 'eth_accounts' }).then(accounts => {
+                    if (accounts.length > 0) {
+                        connectWallet();
+                    }
+                });
+            }
+
+            // 加载保存的 API Key
+            const savedApiKey = localStorage.getItem('graphApiKey');
+            if (savedApiKey) {
+                document.getElementById('graphApiKey').value = savedApiKey;
+            }
+
+            // 保存 API Key
+            document.getElementById('graphApiKey').addEventListener('change', (e) => {
+                localStorage.setItem('graphApiKey', e.target.value);
+            });
+        };
+    </script>
+</body>
+</html>
